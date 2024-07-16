@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart EV Parking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .parking-lot {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+        .spot-container {
+            display: flex;
+            align-items: center;
+        }
+        .spot {
+            width: 100px;
+            height: 150px;
+            border: 3px solid #333;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .available {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .occupied {
+            background-color: #F44336;
+            color: white;
+        }
+        .battery {
+            width: 40px;
+            height: 80px;
+            border: 3px solid #333;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .battery::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 5px;
+            background-color: #333;
+        }
+        .battery-level {
+            width: 100%;
+            height: 0;
+            background-color: #4CAF50;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.5s ease;
+        }
+        .charging .battery-level {
+            animation: charging 2s infinite;
+        }
+        @keyframes charging {
+            0%, 100% { height: 20%; }
+            50% { height: 80%; }
+        }
+        .update-time {
+            margin-top: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smart EV Parking</h1>
+        <div class="parking-lot">
+            <div class="spot-container">
+                <div class="battery" id="battery1">
+                    <div class="battery-level"></div>
+                </div>
+                <div id="spot1" class="spot">1</div>
+            </div>
+            <div class="spot-container">
+                <div id="spot2" class="spot">2</div>
+                <div class="battery" id="battery2">
+                    <div class="battery-level"></div>
+                </div>
+            </div>
+        </div>
+        <p class="update-time" id="updateTime"></p>
+    </div>
+
+    <script>
+        function updateParkingStatus() {
+            fetch('http://localhost:8000/latest_results', {mode: 'cors'})
+                .then(response => response.json())
+                .then(data => {
+                    const spotsAvailable = data.spots_available;
+                    updateSpot(1, spotsAvailable >= 1);
+                    updateSpot(2, spotsAvailable == 2);
+                    document.getElementById('updateTime').textContent = `Last updated: ${data.timestamp}`;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function updateSpot(spotNumber, isAvailable) {
+            const spot = document.getElementById(`spot${spotNumber}`);
+            const battery = document.getElementById(`battery${spotNumber}`);
+            if (isAvailable) {
+                spot.className = 'spot available';
+                battery.classList.remove('charging');
+                battery.querySelector('.battery-level').style.height = '0%';
+            } else {
+                spot.className = 'spot occupied';
+                battery.classList.add('charging');
+            }
+        }
+
+        // Update immediately and then every 30 seconds
+        updateParkingStatus();
+        setInterval(updateParkingStatus, 30000);
+    </script>
+</body>
+</html>
