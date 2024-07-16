@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Detector with Bounding Boxes</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #imagePreview, #resultImage { max-width: 100%; margin-top: 20px; }
+        #result { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Car Detector with Bounding Boxes</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <button onclick="detectCars()">Detect Cars</button>
+    <img id="imagePreview" src="" alt="Preview" style="display: none;">
+    <div id="result"></div>
+    <img id="resultImage" src="" alt="Result" style="display: none;">
+
+    <script>
+        function detectCars() {
+            const fileInput = document.getElementById('imageUpload');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select an image first.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('http://localhost:8000/detect_cars/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `
+                    <h2>Detection Results:</h2>
+                    <p>Cars Detected: ${data.cars_detected}</p>
+                `;
+                
+                // Display the image with bounding boxes
+                const resultImage = document.getElementById('resultImage');
+                resultImage.src = `data:image/png;base64,${data.image_with_boxes}`;
+                resultImage.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing the image.');
+            });
+        }
+
+        document.getElementById('imageUpload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const imagePreview = document.getElementById('imagePreview');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
